@@ -1,0 +1,165 @@
+---
+title: "DS2 HW3"
+author: "Jerry Zhou"
+format: pdf
+execute:
+  message: false
+  warning: false
+  echo: true
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+The `babynames` dataset in the `babynames` packages contains all births in the U.S. from 1880 to 2015 in which there were at least 5 births of that *sex-name* dyad in that year.
+(A "dyad" is a combination of two variables, "triad" is three, etc.)
+
+Create a dataset called `babynames_total` that totals `births` across all years.
+(Note: The case in the new dataset should be `sex` and `name`, which means that each of these dyads should appear only once in the dataset.)
+
+```{r}
+library(tidyverse)
+library(babynames)
+head(babynames, 10)
+
+babynames_total <- babynames |> 
+  group_by(sex, name) |>
+  summarise(births = sum(n), .groups = "drop") ; head(babynames_total, 10)
+
+#.groups = "drop" prevents data from being grouped. Not an issue for graphs, but it is for manipulating data.
+# also, why grouped by sex and not sex and name? 
+```
+
+Use this dataset to calculate what is asked below:
+
+## 1) 10 most popular names
+
+```{r}
+babynames_total |>
+  arrange(desc(births)) |>
+  head(10)
+```
+
+## 2) Least popular names
+
+a.  What is the smallest value of `births` in the dataset?
+b.  How many *sex-name* have that many births?
+c.  Based on the way the data were assembled, explain why there are so many.
+
+```{r}
+# a.
+babynames_total |>
+  arrange(births) |>
+  head(10)
+
+babynames_total |>
+  pull(births) |>
+  min()
+
+# b.
+babynames_total |> filter(births == 5)|> count()
+babynames_total |> filter(births == 5)|> nrow()
+```
+
+-   5 births.
+-   15,477 *sex-name* have 5 births.
+-   The *sex-name* dyad contains all names and sexes recorded from 1880 to 2015. Even some of these rare names per sex can be repeated to have 5 births, especially if they're named that per generation (i.e. Jerry Sr. and Jerry Jr.).
+
+## 3) 10 most popular [boys']{.underline} names that end in a vowel
+
+```{r}
+babynames_total_3 <- babynames_total |> mutate(last = str_sub(name,-1)); # babynames_total_3
+babynames_total_3 |>
+  filter(sex == "M") |>
+  filter(str_detect(last, "[aeiou]")) |>
+  arrange(desc(births)) |>
+  head(10)
+```
+
+## 4) 10 most popular [girls']{.underline} names with joe/jo suffix
+
+Find the 10 most popular girls' names that end in "joe" or "jo", excluding the names "Joe", and "Jo".
+For this, problem, you should include all spellings, whether or not they are capitalized (so, for example, "Mary Jo" counts as ending in "jo")
+
+```{r}
+babynames_total_4 <- babynames_total |> mutate(last = str_sub(str_to_lower(name),-3))  #names start in lowercase
+babynames_total_4 |>
+  filter(sex == "F") |>
+  filter(str_detect(last, "(jo|joe)$")) |> # $ only includes jo/joe names at end
+  arrange(desc(births)) |>
+  head(10)
+```
+
+## 5) Allnameslikethis
+
+Did we need to worry about case in the last problem?
+To answer this, verify the following:
+
+a.  There are no spaces in any names
+b.  The first letter is always capitalized
+c.  No other letters are capitalized
+
+```{r}
+# a.
+babynames_total_4 |>
+  filter(str_detect(name, " ")) |>
+  count()
+
+# b. 
+babynames_total_4 |>
+  filter(str_sub(name, 1, 1) != str_to_upper(str_sub(name, 1, 1)) ) |>    #filter names starting with lowercase letters from names starting with uppercase letters
+  count()
+
+# c.
+babynames_total_4 |>
+  filter(str_detect(str_sub(name, 2), "[A-Z]")) |>  # starts with names on second letter
+  count()
+
+```
+
+#### The problems below are optional, since they are not working with text, but I thought they provided an interesting challenge.
+
+## 6) Closest to the average (optional)
+
+Calculate the average number of births by *sex-name*.
+Which *sex-name* is closest to that number?
+Do this algorithmically in one pipeline, meaning no saving any objects and no typing in the average yourself.
+
+```{r}
+babynames_total |>
+  mutate(avg_births = mean(births)) |>  # Calculates avg birth
+  mutate(diff = abs(births - avg_births)) |>  # subtracts avg birth by birth in that
+  arrange(diff) |> # arrange by lowest diff
+  head(5)
+```
+
+* Newell (M) is the closest to the average number of births.
+
+## 7) 10 most commmon cross-sex names (optional)
+
+Show the most common names that are given both to males and to females.
+You will have to make a decision about how to quantify this - I recommend not looking just at total births (male + female).
+
+```{r}
+babynames_total |>
+  group_by(name) |>
+  filter(sex == "F"| sex == "M") |>          # filter by both sexes
+  summarise(
+    male_births   = births[sex == "M"],
+    female_births = births[sex == "F"],
+    bothness = min(male_births, female_births),          # minimum name in either male or female births. Using max will heavily lean towards male names
+    .groups = "drop"
+  ) |>
+  arrange(desc(bothness)) |>
+  head(10)
+
+
+# 45-55% male
+babynames_total |>
+  pivot_wider(names_from = sex, values_from = births) |>
+  rename(female = F, male = M) |>
+  filter(!is.na(female), !is.na(male)) |>
+  mutate(prop_male = male / (male + female)) |>
+  filter(0.45 < prop_male, prop_male < 0.55) |>
+  arrange(desc(male+female))
+```
