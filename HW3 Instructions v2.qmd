@@ -65,6 +65,9 @@ babynames_total |> filter(births == 5)|> nrow()
 -   15,477 *sex-name* have 5 births.
 -   The *sex-name* dyad contains all names and sexes recorded from 1880 to 2015. Even some of these rare names per sex can be repeated to have 5 births, especially if they're named that per generation (i.e. Jerry Sr. and Jerry Jr.).
 
+ROB COMMENTS: 
+I think that the arrange format for 2a definitely works, but as a way to simplify the process to find the smallest value, I just used the min() function inside a summarize() function to look something like (`summarize(min_ppl = min(births))`). This helps to simplify/reduce the number of lines of code!
+
 ## 3) 10 most popular [boys']{.underline} names that end in a vowel
 
 ```{r}
@@ -89,6 +92,9 @@ babynames_total_4 |>
   arrange(desc(births)) |>
   head(10)
 ```
+
+ROB COMMENTS:
+I really like the simplification of the code by using the `$` to indicate only jo/joe names at the end. I did it with slightly more lines of code and separate boolean expressions like `(last_two == "jo") | (last_three == "joe")` so I like the idea of doing it all at once.
 
 ## 5) Allnameslikethis
 
@@ -118,6 +124,9 @@ babynames_total_4 |>
 ```
 
 #### The problems below are optional, since they are not working with text, but I thought they provided an interesting challenge.
+
+ROB COMMENTS:
+I think that saving the above problem as an object helps expedite the process. I repeated my code from before and I'm now realizing how much more efficient it would be to just save the above manipulation as an object!
 
 ## 6) Closest to the average (optional)
 
@@ -163,3 +172,6 @@ babynames_total |>
   filter(0.45 < prop_male, prop_male < 0.55) |>
   arrange(desc(male+female))
 ```
+
+ROB COMMENTS:
+I think that the way you categorized the proportions of 45-55% male makes a lot of sense. It may be interesting if you explored a sensitivity analysis with a greater/lower proportion to see what the results would yield (perhaps 40-60%), but I think that the percentage you chose makes sense. Great job overall!
