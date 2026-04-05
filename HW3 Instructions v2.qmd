@@ -68,6 +68,11 @@ babynames_total |> filter(births == 5)|> nrow()
 ROB COMMENTS: 
 I think that the arrange format for 2a definitely works, but as a way to simplify the process to find the smallest value, I just used the min() function inside a summarize() function to look something like (`summarize(min_ppl = min(births))`). This helps to simplify/reduce the number of lines of code!
 
+## 2) Least popular names - using Rob's comments
+```{r}
+babynames_total |> summarize(min_ppl = min(births))
+```
+
 ## 3) 10 most popular [boys']{.underline} names that end in a vowel
 
 ```{r}
@@ -175,3 +180,30 @@ babynames_total |>
 
 ROB COMMENTS:
 I think that the way you categorized the proportions of 45-55% male makes a lot of sense. It may be interesting if you explored a sensitivity analysis with a greater/lower proportion to see what the results would yield (perhaps 40-60%), but I think that the percentage you chose makes sense. Great job overall!
+
+## 7) 10 most commmon cross-sex names (optional) - using Rob's comments
+
+```{r}
+# First let's replace summarise() with reframe()
+babynames_total |>
+  group_by(name) |>
+  filter(sex == "F"| sex == "M") |>          # filter by both sexes
+  reframe(
+    male_births   = births[sex == "M"],
+    female_births = births[sex == "F"],
+    bothness = min(male_births, female_births),          # minimum name in either male or female births. Using max will heavily lean towards male names
+    .groups = "drop"
+  ) |>
+  arrange(desc(bothness)) |>
+  head(10)
+
+# 40-60% male
+babynames_total |>
+  pivot_wider(names_from = sex, values_from = births) |>
+  rename(female = F, male = M) |>
+  filter(!is.na(female), !is.na(male)) |>
+  mutate(prop_male = male / (male + female)) |>
+  filter(0.40 < prop_male, prop_male < 0.60) |>
+  arrange(desc(male+female))
+```
+
